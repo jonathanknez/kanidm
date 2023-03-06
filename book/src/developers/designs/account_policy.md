@@ -12,6 +12,10 @@ A list (not comprehensive) of these include:
 * Key Logging / Physical Discovery
 * Common Password / Spray
 * Brute Force
+* Session Theft
+
+Account Policy is used to define the rules of enforcement for accounts, their credential types,
+how they authenticate, what privileges are granted, and how their sessions are managed.
 
 Credential Policies
 ===================
@@ -27,20 +31,58 @@ part of the group that should be protected.
 When multiple credential policies exist that may be conflicting, the "stricter" policy is enforced
 as a group in the set requires it.
 
-The strength of credentials is today sorted as:
-
 * (weakest)
-* Password
+* Password (aka no policy).
 * GeneratedPassword
-* Webauthn (with out verification)
-* TOTP + Password
-* Webauthn + Password
-* WebauthnVerified
-* WebauthnVerified + Password
+* PasswordMfa (totp)
+* Webauthn (Passkeys)
+* AttestedWebauthn (Must be a certified security device)
 * (strongest)
 
+AttestedWebauthn will require the instance admins to upload and define a set of attestation
+certificates that may be used for high security requirements. Currently it is not determined if
+the attestation certificates should be global or per-policy.
+
+Unix PW Sync
+============
+
+This defines if the accounts primary credential password can be synced to the unix pw usage.
+
+If allowed, it can be useful especially for iam synced accounts, allowing their password to be
+immediately used for both pursposes.
+
+The risk is that this boolean allows a password to be bruteforced via LDAP without the protection
+of the TOTP to ratelimit. LDAP however does implement a softlock and rate limit which mitigates this
+threat. The other risk is that allowing this can turn the password that is paired with TOTP to a
+single factor for some applications.
+
+However, this is also not a great risk since the only two use cases are:
+
+* SSH - the password is for sudo, but ssh keys grant initial access
+* LDAP - ldap bound applications can likely also use oauth2 instead which doesn't require a pw
+
+In the future:
+
+* Application Passwords - Will be offered via LDAP subtrees and prevent the use of unix pw in these contexts.
+
+Regardless, a boolean to allow or disallow this should be present. By default unix pw sync should be
+enabled.
+
+SSH Key Storage
+===============
+
+SSH Keys can be attested the same as webauthn as to the location of their storage. This will be required
+in high security environments where this allows strong assertions to the security of stored key material
+and their MFA/UserVerification status.
+
+This has many similarities to webauthn attestanion and needs extra design.
+
+Extra Details
+=============
+
+
 Rate Limiting
-======================
+^^^^^^^^^^^^^
 
 Rate Limiting is the process of delaying authentication responses to slow the number of attempts
 against an account to deter attackers. This is often used to prevent attackers from bruteforcing
@@ -96,7 +138,7 @@ FUTURE:
 Ratelimit on unix auth
 
 Hard Lock + Expiry/Active Time Limits
-=====================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It must be possible to expire an account so it no longer operates (IE temporary contractor) or
 accounts that can only operate after a known point in time (Student enrollments and their course
@@ -115,15 +157,4 @@ are stored on the server in unix epoch to account for timezones and geographic d
 Must prevent creation of RADIUS auth tokens
 
 Must prevent login via unix.
-
-Application Passwords / Issued Oauth Tokens
-===========================================
-
-* Relates to claims
-* Need their own expirys
-* Need ratelimit as above?
-
-
-
-
 
