@@ -29,6 +29,10 @@ if [ -f "$HOME/.cargo/env" ]; then
     source "$HOME/.cargo/env"
 fi
 
+if [ -z "${TMPDIR}" ]; then
+    TMPDIR="/tmp"
+fi
+
 if [ "$(which cargo | wc -l)" -ne 1 ]; then
     echo "Installing rust"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > "${TMPDIR}/rustup.sh"
